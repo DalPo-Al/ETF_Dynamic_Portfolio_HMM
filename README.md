@@ -61,7 +61,7 @@ Therefore, using covariance_type="diag" in the HMM is justified, as it reduces t
 ### Logging for info showing
 we use logging build in package to manage INFO showing on software ongoing and provide a more polish look to output.
 
-### Double rolling window approach consequent
+### Double rolling window approach
 We employ a rolling window of 252 days to generate a time series of market hidden states. To initialize the process, the first 252 days are used as the initial window, resulting in the removal of the first 252 rows from the final dataset.
 
 For each subsequent day `t`, we use the most recent 252 days of data to compute state-specific parameters: a mean vector and a covariance matrix for each of the three hidden states. The model's predicted hidden state for day `t` then selects the corresponding mean and covariance pair. These selected parameters serve as the inputs for the optimization of portfolio methods, which produces a set of optimal portfolio weights. This procedure is repeated daily, generating a daily series of portfolio allocations.
