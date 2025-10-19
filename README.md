@@ -40,26 +40,19 @@ To ensure model stability and convergence, the number of hidden states was reduc
 For a Gaussian HMM with \(K\) hidden states and \(D\) observed features, the number of free parameters is computed as:
 
 ### Number of Parameters in the Model
+### Number of Parameters in the Model
 
-$$
-n_{\text{params}} =
-K \cdot \frac{D(D+1)}{2}
-+ K \cdot D
-+ K(K-1)
-+ (K-1)
-$$
+n_params = K * [D(D + 1) / 2] + K * D + K * (K - 1) + (K - 1)
 
 Where:
+- D = number of features  
+- K = number of states  
 
-- **D** — number of features  
-- **K** — number of states  
-
-**Breakdown:**
-
-- \( K \cdot \frac{D(D+1)}{2} \): covariance parameters (full covariance per state)  
-- \( K \cdot D \): mean parameters (mean vector per state)  
-- \( K(K-1) \): transition probabilities (each row sums to 1 → \( K-1 \) free params per row)  
-- \( K - 1 \): initial state probabilities (sum to 1 → \( K-1 \) free params)
+Breakdown:
+- K * [D(D + 1) / 2] → covariance parameters (full covariance matrix per state)  
+- K * D → mean parameters (mean vector per state)  
+- K * (K - 1) → transition probabilities (each row sums to 1, so K - 1 free parameters per row)  
+- (K - 1) → initial state probabilities (sum to 1, so K - 1 free parameters)
 
 ### PCA Decomposition
 We apply PCA decomposition, since variables are each other correlated and HMM works better with a small amount of variables. By performing PCA we reduce dimensionality (less variables) and we keep only components up to explain 90% of original variance within the dataframe. Since PCA produces linearly uncorrelated components, the covariance matrix of the transformed data becomes (approximately) diagonal.
