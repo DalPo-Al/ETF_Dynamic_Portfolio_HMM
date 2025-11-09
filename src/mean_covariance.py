@@ -208,11 +208,11 @@ def plotting():
   cumulative_cost=cost.cumsum()       #cumulative sum of turnover cost
   fig,ax=plt.subplots(2,1, sharex=True, figsize=(12, 6))
   ax[0].plot(cumulative, label=["MVO", "GMV","EW"])
-  ax[0].set_title("Turnover_cost")
+  ax[0].set_title("Cumulative_return_net [log10]")
   ax[0].legend()
   ax[0].grid(True)
   ax[1].plot(np.log10(cumulative_cost), label=["MVO", "GMV","EW"]) #log(1+x)
-  ax[1].set_title("Cumulative_return_net [log10]") #when flat the cost is the same.
+  ax[1].set_title("Turnover_cost") #when flat the cost is the same.
   ax[1].legend()
   ax[1].grid(True)
   plt.savefig("data/plot.jpg", dpi=300)
