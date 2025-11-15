@@ -73,6 +73,10 @@ The key of the dictionary corresponds to the date of the last observation in the
 ### Portfolio optimization weights
 I performed the comparison between MVO, GMV and EW, we are interested in using a Equal Weight portfolio as benchmark, so a portfolio in which all assets are weighted the same, a Mean Variance Optimization method and a Global Minima Variance portfolio. The weights are computed using dedicated functions and results are saved on above dictionary and saved as .joblib object to store in memory and access it without recomputation.
 
+### Serialization of dictionary
+Joblib is a Python library designed for efficiency serialization and deserialization of Python Objects. Serialization means converting a Python Object (like a list, dictionary, arrays or even models) into a sequence of bytes that can be stored on disk or sent over a network. Deserialization is the opposite process of converting the bytes back into the original Python Object. 
+Serialization and Deserialization have been used in this project to locally save and handle over different files the dictionary Python Object containing optimized weights.
+
 ### Returns computation
 Due to construction of dictionary that stores hidden states and mean and covariance matrices, and original dataframe with returns it was necessary to use three keys of indeces from dates.
 - t_0 => the current date => used to access return 
