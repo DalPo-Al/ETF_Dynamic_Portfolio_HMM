@@ -1,108 +1,282 @@
-### Project Description
-This project investigates whether a dynamic portfolio based on market regimes outperforms an equal-weight ETF portfolio. We perform the analysis by computing the Sharpe ratio, Maximum Drawdown, and final cumulative return (percentage) of each portfolio to evaluate performance.
+# Dynamic Portfolio Optimization under Market Regimes (HMM-Based Approach)
 
-### Asset Universe
-- SPY => (Equities) => SPDR S&P500 ETF Trust Equity tracking S&P500 index (US large-cap stocks) 
-- GLD => (Gold) => SPDR Gold Shares Commodity ETF tracking gold prices.
-- USO => (Oil) => United States Oil Fund Commodiy ETF tracking crude oil prices (WTI)
-- BND => (Bonds) => Vanguard Total Bond Market ETF Bond providing broad exposure to US.
+## Project Description
+This project investigates whether a dynamic portfolio based on market regimes outperforms an equal-weight ETF portfolio. The analysis evaluates performance using the following metrics:
 
-### HMM model
-In order to define market regime signals we decide to adopt a data drive approach using HMM model to define hiddne state transitions among three hidden states (hidden state value has been defined using data driven approach and equal to 5 for optimal. Despite the answer, we where forced by HMM to reduce to 3 hidden states due to size of window and so our interest in keeping the window of size 252 trading days. The HMM model has been trained on momentum and volatility of returns all computed manually with scratch functions.
+- Sharpe Ratio  
+- Maximum Drawdown  
+- Final Cumulative Return (%)
 
-### Momentum_window=60
-values used in industry:
-- 20 days => short term market regime
-- 60 days => balance between short term and smoothness (preferred choice)
-- 120 days => smoother trends, less sensitivity to short term noise
+These metrics are computed for each portfolio strategy to provide a comprehensive risk-adjusted performance comparison.
 
-### Volatility_window=20
-values used in industry:
-- 20 days => monthly
-- 60 days => stable
-volatility changes quickly, 20 is standard for regime switching models
+---
 
-### HMM for reproducibility
-EM algorithm in HMMs starts with random initialization of:
-- Initial state probabilities
-- Transition probabilities
-- Emission parameters
+## Asset Universe
+The analysis is conducted on the following ETF universe:
 
-Without fixing **random_state**, each run starts from a different configuration, yielding different final parameters and log-likelihood values, by using **random_state=42** we ensure reproducibility.
+- **SPY** → (Equities) → SPDR S&P 500 ETF Trust  
+  Tracks the S&P 500 index (US large-cap equities)
 
-### Hidden State Selection Problem
-The optimal number of hidden states was initially identified as 5 based on the Bayesian Information Criterion (BIC), which balances model fit and complexity.
-However, during implementation, the model produced numerical instabilities (NaN values in the transition or initial probability matrices), indicating insufficient data support for estimating all parameters in a 5-state model.
+- **GLD** → (Gold) → SPDR Gold Shares  
+  Commodity ETF tracking gold prices
 
-To ensure model stability and convergence, the number of hidden states was reduced to 3, which provided consistent estimation of transition and emission probabilities while preserving the main regime dynamics.
+- **USO** → (Oil) → United States Oil Fund  
+  Commodity ETF tracking crude oil (WTI)
 
-### How n_params in BIC computation has been determined:
-For a Gaussian HMM with \(K\) hidden states and \(D\) observed features, the number of free parameters is computed as:
+- **BND** → (Bonds) → Vanguard Total Bond Market ETF  
+  Broad exposure to the US bond market
 
-### Number of Parameters in the Model
-### Number of Parameters in the Model
+---
 
-n_params = K * [D(D + 1) / 2] + K * D + K * (K - 1) + (K - 1)
+## Hidden Markov Model (HMM) for Market Regimes
+
+Market regimes are identified using a data-driven Hidden Markov Model (HMM), which captures hidden state transitions across time.
+
+- Number of hidden states: initially tested with **K = 5 (optimal via BIC)**  
+- Final implementation: **K = 3 states**
+
+Although BIC suggested 5 states as optimal, numerical instability (NaN values in transition and initial probability matrices) emerged due to insufficient data support under the rolling window constraint (252 trading days). Therefore, the model was reduced to 3 hidden states to ensure stability and convergence.
+
+The HMM is trained on:
+- Momentum (computed manually)
+- Volatility of returns (computed from scratch functions)
+
+---
+
+## Feature Engineering
+
+### Momentum Window = 60
+Common industry benchmarks:
+- 20 days → short-term regime sensitivity  
+- 60 days → balanced approach (preferred)  
+- 120 days → long-term smoothing, lower noise sensitivity  
+
+### Volatility Window = 20
+Common interpretations:
+- 20 days → monthly volatility (standard)  
+- 60 days → smoother regime estimation  
+
+Volatility reacts quickly to market changes; thus, 20 days is typically used in regime-switching models.
+
+---
+
+## Reproducibility in HMM
+
+The EM algorithm used in HMMs depends on random initialization of:
+- Initial state probabilities  
+- Transition matrix  
+- Emission parameters  
+
+Without fixing `random_state`, each run produces different results (parameters and log-likelihood). To ensure reproducibility, we set:
+
+- `random_state = 42`
+
+---
+
+## Hidden State Selection Problem
+
+The optimal number of hidden states was initially selected using the Bayesian Information Criterion (BIC), which balances model fit and complexity.
+
+However:
+- K = 5 led to numerical instability  
+- Causes: insufficient data support within rolling estimation window  
+
+Final decision:
+- K = 3 chosen for stable estimation  
+- Preserves main regime structure while ensuring convergence of transition/emission parameters  
+
+---
+
+## Number of Parameters in the HMM (BIC)
+
+For a Gaussian HMM with \( K \) hidden states and \( D \) observed features, the number of parameters is:
+
+\[
+n_{\text{params}} = K \cdot \frac{D(D + 1)}{2} + K \cdot D + K \cdot (K - 1) + (K - 1)
+\]
 
 Where:
-- D = number of features  
-- K = number of states  
+- \( D \) = number of features  
+- \( K \) = number of hidden states  
 
-Breakdown:
-- K * [D(D + 1) / 2] → covariance parameters (full covariance matrix per state)  
-- K * D → mean parameters (mean vector per state)  
-- K * (K - 1) → transition probabilities (each row sums to 1, so K - 1 free parameters per row)  
-- (K - 1) → initial state probabilities (sum to 1, so K - 1 free parameters)
+### Breakdown:
+- \( K \cdot \frac{D(D + 1)}{2} \) → covariance matrices (full covariance per state)  
+- \( K \cdot D \) → mean vectors per state  
+- \( K \cdot (K - 1) \) → transition probabilities (rows sum to 1)  
+- \( (K - 1) \) → initial state probabilities  
 
-### PCA Decomposition
-We apply PCA decomposition, since variables are each other correlated and HMM works better with a small amount of variables. By performing PCA we reduce dimensionality (less variables) and we keep only components up to explain 90% of original variance within the dataframe. Since PCA produces linearly uncorrelated components, the covariance matrix of the transformed data becomes (approximately) diagonal.
-Therefore, using covariance_type="diag" in the HMM is justified, as it reduces the number of parameters, eases computation, and typically leads to faster convergence.
+---
 
-### Logging for info showing
-we use logging build in package to manage INFO showing on software ongoing and provide a more polish look to output.
+## PCA Decomposition
 
-### Double rolling window approach
-We employ a rolling window of 252 days to generate a time series of market hidden states. To initialize the process, the first 252 days are used as the initial window, resulting in the removal of the first 252 rows from the final dataset.
+Principal Component Analysis (PCA) is applied because:
+- Input variables are highly correlated  
+- HMM performs better on low-dimensional, decorrelated inputs  
 
-For each subsequent day `t`, we use the most recent 252 days of data to compute state-specific parameters: a mean vector and a covariance matrix for each of the three hidden states. The model's predicted hidden state for day `t` then selects the corresponding mean and covariance pair. These selected parameters serve as the inputs for the optimization of portfolio methods, which produces a set of optimal portfolio weights. This procedure is repeated daily, generating a daily series of portfolio allocations.
+We retain enough components to explain **90% of the variance**.
 
-### Dictionary Logic implemented
-The dictionary structure stores the mean and covariance matrices estimated for each hidden state considering the values of the given rolling window (to simulate a real life estimation and avoid data leakage pitfal).
-The key of the dictionary corresponds to the date of the last observation in the window, ensuring temporal alignment between the estimated parameters (weights) and the predicted hidden state (and so with mean and covariance matrix) for \(t+1\)
+Since PCA produces linearly uncorrelated components:
+- Covariance matrix becomes approximately diagonal  
 
-### Portfolio optimization weights
-I performed the comparison between MVO, GMV and EW, we are interested in using a Equal Weight portfolio as benchmark, so a portfolio in which all assets are weighted the same, a Mean Variance Optimization method and a Global Minima Variance portfolio. The weights are computed using dedicated functions and results are saved on above dictionary and saved as .joblib object to store in memory and access it without recomputation.
+Thus:
+- `covariance_type = "diag"` is justified  
+- Benefits:
+  - Reduced parameter space  
+  - Faster convergence  
+  - Improved numerical stability  
 
-### Serialization of dictionary
-Joblib is a Python library designed for efficiency serialization and deserialization of Python Objects. Serialization means converting a Python Object (like a list, dictionary, arrays or even models) into a sequence of bytes that can be stored on disk or sent over a network. Deserialization is the opposite process of converting the bytes back into the original Python Object. 
-Serialization and Deserialization have been used in this project to locally save and handle over different files the dictionary Python Object containing optimized weights.
+---
 
-### Returns computation
-Due to construction of dictionary that stores hidden states and mean and covariance matrices, and original dataframe with returns it was necessary to use three keys of indeces from dates.
-- t_0 => the current date => used to access return 
-- t_1 => the day before => used to access current portfolio weights
-- t_2 => t-2 => the day before yesterday = used to access previous portfolio weights and implement the cost turnover.
+## Logging System
 
-### Cost turnover
-Since we are interested in simulating a real life dynamic optimizer we decide to implement a cost_factor of 0.005% per unit of turnover, to compute the turnover we use the summatory of the different absolute values of the weights absolute difference between consequent periods.
+The built-in Python `logging` module is used to:
+- Monitor execution flow  
+- Provide structured INFO-level outputs  
+- Improve readability and debugging during runtime  
 
-### Metrics computation
-In order to compare performances of portfolios we compute:
-- Sharpe Ratio
-- Max DrawDown Ratio
-- Cumulative return generated (%)
+---
 
-### Conclusion
+## Rolling Window Framework (252 Days)
+
+A rolling window approach is used to simulate realistic, non-leaky estimation:
+
+- Initial window: 252 trading days  
+- First 252 rows are excluded from final dataset  
+
+For each day \( t \):
+- The previous 252 days are used to estimate:
+  - Mean vector per state  
+  - Covariance matrix per state  
+
+The predicted hidden state determines which parameters are selected for portfolio optimization.
+
+This process is repeated daily, generating a dynamic time series of portfolio allocations.
+
+---
+
+## Dictionary-Based Parameter Storage
+
+A dictionary structure stores:
+- Mean vectors per state  
+- Covariance matrices per state  
+
+Key design:
+- Key = last date of rolling window  
+
+This ensures:
+- Temporal alignment between:
+  - Estimated parameters  
+  - Predicted hidden state  
+  - Portfolio optimization inputs  
+
+It prevents data leakage by construction.
+
+---
+
+## Portfolio Optimization Methods
+
+The following strategies are compared:
+
+- Equal Weight (EW) → benchmark  
+- Mean-Variance Optimization (MVO)  
+- Global Minimum Variance (GMV)  
+
+Weights are computed using dedicated optimization functions and stored in a dictionary.
+
+To improve efficiency:
+- Results are serialized using `joblib`  
+- Avoids recomputation across sessions  
+
+---
+
+## Serialization (Joblib)
+
+Joblib is used for:
+- Efficient serialization/deserialization of Python objects  
+
+Definitions:
+- Serialization → convert Python objects into byte streams  
+- Deserialization → reconstruct objects from stored bytes  
+
+Use case in this project:
+- Store dictionary of optimized weights  
+- Enable fast reload without recomputation  
+
+---
+
+## Returns Computation Logic
+
+Due to the rolling structure, three temporal indices are used:
+
+- \( t_0 \) → current date → returns  
+- \( t_1 \) → previous day → current portfolio weights  
+- \( t_2 \) → two days back → previous weights (for turnover calculation)  
+
+This structure ensures consistency between:
+- Portfolio weights  
+- Returns  
+- Transaction costs  
+
+---
+
+## Transaction Costs (Turnover Model)
+
+To simulate realistic trading:
+
+- Cost factor: **0.005% per unit of turnover**
+
+Turnover is defined as:
+
+\[
+\text{Turnover} = \sum |w_t - w_{t-1}|
+\]
+
+This captures:
+- Rebalancing intensity  
+- Trading friction effects  
+
+---
+
+## Performance Metrics
+
+Portfolio performance is evaluated using:
+
+- Sharpe Ratio  
+- Maximum Drawdown  
+- Cumulative Return (%)  
+
+These metrics capture:
+- Risk-adjusted returns  
+- Worst-case loss exposure  
+- Total profitability  
+
+---
+
+## Results Summary
+
 | Portfolio | Sharpe Ratio | Max Drawdown | Cumulative Return [%] |
-|-----------|-------------|--------------|---------------------|
-| ret_mvo   | -0.02441    | -4.071       | 31.16               |
-| ret_gmv   | 0.01078     | -4.897       | 38.16               |
-| ret_ew    | -0.12461    | -4.736       | 14.32               |
+|----------|--------------|--------------|------------------------|
+| ret_mvo  | -0.02441     | -4.071       | 31.16                  |
+| ret_gmv  | 0.01078      | -4.897       | 38.16                  |
+| ret_ew   | -0.12461     | -4.736       | 14.32                  |
 
-As expected, the dynamic portfolios outperformed the equal-weight portfolio, achieving an average cumulative return of ~30% over the period 2015–2024, compared to 14% for the equal-weight portfolio.
+---
 
-Among the dynamic portfolios, GMV optimization outperformed MVO, with a +7% higher cumulative return and a positive Sharpe ratio, indicating outperformance relative to the risk-free asset on a volatility-adjusted basis.
+## Conclusion
 
-Additionally, GMV exhibited a lower Maximum Drawdown, reflecting smaller losses before recovery from peaks.
+Dynamic portfolio strategies outperform the equal-weight benchmark over the period **2015–2024**.
 
-Conclusion: Considering cumulative returns, Sharpe ratio, and drawdown, GMV is the preferred optimization method, with MVO and equal-weight portfolios as alternative strategies that generate positive returns over time.
+Key findings:
+- Average cumulative return of dynamic strategies ≈ **30%**
+- Equal-weight portfolio returns ≈ **14%**
+
+Among dynamic approaches:
+- **GMV outperforms MVO**
+  - Higher cumulative return (+7%)
+  - Positive Sharpe ratio (risk-adjusted outperformance)
+  - Lower Maximum Drawdown (more stable downside behavior)
+
+### Final Insight
+Considering return, risk-adjusted performance, and drawdown behavior, **GMV is the most robust portfolio strategy in this framework**, while MVO and Equal Weight remain viable but inferior benchmarks.
+
+---
